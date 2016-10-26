@@ -39,8 +39,6 @@ SimpleCommand::SimpleCommand()
 void
 SimpleCommand::insertArgument( char * argument )
 {
-	//char * actual = (char*)calloc(1024, sizeof(char));
-	//fprintf(stderr, "argument is : %s\n", argument);
 	if ( _numOfAvailableArguments == _numOfArguments  + 1 ) {
 		// Double the available space
 		_numOfAvailableArguments *= 2;
@@ -56,7 +54,6 @@ SimpleCommand::insertArgument( char * argument )
 		}
 		else{
 			char * dup = strdup(argument);
-	//		fprintf(stderr, "argument is: %s\n", dup);
 			char * user = (char *)calloc(512, sizeof(char));
 			char * realUser = user;
 			dup++;
@@ -66,14 +63,12 @@ SimpleCommand::insertArgument( char * argument )
 				dup++;
 			}
 			*user = '\0';
-	//		fprintf(stderr, "user is: %s\n", realUser);
 			struct passwd *  pw = getpwnam(realUser);
 			char * realArgTilde = (char*)calloc(1024, sizeof(char));
 			strcat(realArgTilde, pw->pw_dir);
 			char * slash = strchr(dup, '/');
 			if(slash){
 				strcat(realArgTilde, slash);
-	//			fprintf(stderr, "real path is: %s\n", realArgTilde);
 				_arguments[_numOfArguments] = strdup(realArgTilde);
 			}else{
 				_arguments[_numOfArguments] = strdup(pw->pw_dir);
@@ -85,10 +80,7 @@ SimpleCommand::insertArgument( char * argument )
 	//Variable Expansion part
 	else if(strchr(argument, '$')){
 		char * r = (char*)malloc(19 * sizeof(char));
-		//char * r = "^.*${[^}]*}.*$";
 		strcpy(r, "^.*${[^}]*}.*$");
-		//char * reg = strdup(r);
-		//fprintf(stdout, "%s\n", r);
 		regex_t re;
 		int expbuf = regcomp(&re, r, 0);
 		if(expbuf != 0){
@@ -131,12 +123,10 @@ SimpleCommand::insertArgument( char * argument )
 						arg++;
 					}//while
 					realArg[counter] = '\0';
-					//actual = realArg；
 				}
 				_arguments[ _numOfArguments ] = realArg;
 			}
 		}else{
-			//argument = actual;
 			_arguments[ _numOfArguments ] = argument;
 		}
 		
@@ -240,18 +230,12 @@ int compareFunction(const void * one, const void * two){
 	return (strcmp(*(char **)one,*(char **) two));
 }
 
-//int max_entries = 40;
-//int num_entry = 0;
-//char ** array = (char**)malloc(max_entries * sizeof(char*));
-//int flag = 0;
 int max_entries, num_entry;
 char ** array;
 char dot;
-//DIR * d;
+
 
 void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
-	//int max_entries;
-	//int num_entry;
 	if(depth == 0){
 		max_entries = 40;
 		num_entry = 0;
@@ -259,7 +243,6 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 		dot = suffix[0];
 	}
 	if(*suffix == '\0'){
-		/*if(dot == '.'){
 			if(num_entry == max_entries){
 				max_entries *= 2;
 				array = (char**)realloc(array, max_entries * sizeof(char*));
@@ -267,24 +250,6 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 			}
 			char * dup = strdup(prefix);
 			dup[strlen(dup) - 1] = '\0';
-			array[num_entry] = dup;
-			num_entry++;
-		}
-		return;
-
-		}*/
-		//fprintf(stdout, "number of entry in array is: %d\n", num_entry);
-			if(num_entry == max_entries){
-				max_entries *= 2;
-				array = (char**)realloc(array, max_entries * sizeof(char*));
-				assert(array != NULL);
-			}
-			char * dup = strdup(prefix);
-			//char * slash = strchr(dup, '/');
-			//char * real = (char*)malloc(1024 * sizeof(char));
-			//strncpy(real, dup, slash - dup);
-			dup[strlen(dup) - 1] = '\0';
-		//	fprintf(stdout, "-------------------------%s\n", dup);
 			array[num_entry] = dup;
 			num_entry++;
 			return;
@@ -296,27 +261,24 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 	if(s){
 		strncpy(component, suffix, s-suffix);
 		suffix = s + 1;
-	//	fprintf(stdout, "component is: %s\n", component);
 	}
 	else{
 		strcpy(component, suffix);
 		suffix = suffix + strlen(suffix);
 	}
-	//flag = 1;
 	char * newPrefix = (char*)calloc(1024, sizeof(char));
 	if(!strchr(component, '*') && !strchr(component, '?')){
 		sprintf(newPrefix, "%s%s%s", prefix, component, "/");
 		wildcardExpansion(newPrefix, suffix, depth+1);
-		//for(int i = 0; i < num_entry ;++i)
 		if(depth == 0){
 			qsort(array, num_entry, sizeof(char*), compareFunction);
 			for(int i = 0; i < num_entry; ++i)
 				Command::_currentSimpleCommand->insertArgument(array[i]);
 			free(array);
-			//closedir(d);
+			closedir(d);
 			return;
 		}
-		//closedir(d);
+		closedir(d);
 		return;
 	}
 	char * regex = (char*)calloc(1024, sizeof(char));
@@ -350,11 +312,10 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 	*rr = '$';
 	++rr;
 	*rr = '\0';
-	//fprintf(stdout, "%s\n", regex);
 	regex_t rre;
 	int expbuf = regcomp(&rre, regex, REG_EXTENDED|REG_NOSUB);
 	if(expbuf != 0){
-		//perror("regcomp failed\n");
+		perror("regcomp failed\n");
 		return;
 	}
 	char * dir;
@@ -362,22 +323,16 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 		dir = ".";
 	else
 		dir = strdup(prefix);
-	//fprintf(stdout, "path is: %s\n", dir);
 	DIR * d = opendir(dir);
-	//fprintf(stdout, "GOT HERE11111111111\n");
 	if(!d){
-		//perror("open directory failed\n");
+		perror("open directory failed\n");
 		return;
 	}
 	struct dirent * ent;
 	while((ent = readdir(d)) != NULL){
-		//fprintf(stdout, "GOT HERE2222222222\n");
 		regmatch_t mmatch;
 		if(regexec(&rre, ent->d_name, 5, &mmatch, 0) == 0){
-			//flag = 1;
 			sprintf(newPrefix, "%s%s%s", prefix, ent->d_name, "/");
-			//fprintf(stdout, "GOT HERE2222222222\n");
-			//fprintf(stdout, "new prefix is: %s\n", newPrefix);
 			if(dot != '.'){
 				if(ent->d_name[0] != '.'){
 					wildcardExpansion(newPrefix, suffix, depth+1);
@@ -386,7 +341,6 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 			else{
 				wildcardExpansion(newPrefix, suffix, depth+1);
 			}
-			//fprintf(stdout, "current depth: %d\n", depth);
 
 		}
 	}
@@ -410,8 +364,6 @@ void SimpleCommand::wildcardExpansion(char * prefix, char * suffix, int depth){
 
 
 void cd(char * directory){
-	//char * path = (char*)malloc((strlen(directory) + 5) * sizeof(char));
-	//fprintf(stdout, "directory is: %s\n", directory);
 	if(directory[0] == '/'){
 		char * path = (char*)malloc((strlen(directory) + 2) * sizeof(char));
 		strcat(path, directory);
@@ -428,9 +380,7 @@ void cd(char * directory){
 	}
 	char * buff = (char*)malloc(1024 * sizeof(char));
 	char * path = getcwd(buff, 1024);
-	//fprintf(stdout, "string length of path is: %d\n", strlen(path));
 	char * tail = path + strlen(path);
-	//fprintf(stdout, "tail is pointint at: %c\n", *tail);
 	if(!strcmp(directory, "..")){
 		char * prevDir = (char*)malloc(strlen(path) * sizeof(char));
 		int backCounter = 0;
@@ -442,7 +392,6 @@ void cd(char * directory){
 			}
 			else{
 				strncpy(prevDir, path, tail-path+1);
-				//fprintf(stdout, "previous directory is: %s\n", prevDir);
 				break;
 			}
 		}
@@ -450,11 +399,8 @@ void cd(char * directory){
 		setenv("PWD", prevDir, 1);
 		return;
 	}
-	//path[0] = '.';
-	//path[1] = '/';
 	strcat(path,"/");
 	strcat(path, directory);
-	//fprintf(stdout, "directory is going to be set to: %s\n", path);
 	int ret = chdir(path);
 	if(ret == -1){
 		perror("failed to change PWD\n");
@@ -474,7 +420,6 @@ Command::execute()
 
 {
 	// Don't do anything if there are no simple commands
-	//printf("number of simple command: %d\n", _numOfSimpleCommands);
 	if ( _numOfSimpleCommands == 0 ) {
 		clear();
 		prompt();
@@ -483,7 +428,7 @@ Command::execute()
 	//Check if the command is exit, if yes, gracefully exit the shell.
 	if(_numOfSimpleCommands == 1){
 		if(!strcmp(_simpleCommands[0]->_arguments[0],"exit")){
-			//printf("Bye! Have A Good Day! \n");
+			printf("Bye! Have A Good Day! \n");
 			exit(0);
 		}
 	}
@@ -553,7 +498,7 @@ Command::execute()
 	if(_inFile){
 		init_in = open(_inFile, O_RDONLY);
 		if(init_in < 0){
-			//perror("open file failed\n");
+			perror("open file failed\n");
 			exit(2);
 		}
 	}
@@ -602,11 +547,6 @@ Command::execute()
 		}
 		else{
 			int fdpipe[2];
-			/*if(pipe(fdpipe) == -1){
-				perror("pipe failed\n");
-				exit(2);
-			}*/
-
 			pipe(fdpipe);
 			init_out = fdpipe[1];
 			init_in = fdpipe[0];
@@ -652,7 +592,6 @@ Command::execute()
 	clear();
 
 	// Print new prompt
-	//int tmp_in = dup(0);
 	prompt();
 	return;
 //}
@@ -664,8 +603,6 @@ void
 Command::prompt()
 {
 		if(isatty(0)){
-			//printf("Isatty!!!\n");
-
 			if(setPrompt == 1){
 				char * p = (char*)calloc(512, sizeof(char));
 				p = getenv("PROMPT");
@@ -708,24 +645,12 @@ main()
 	sa.sa_handler = disp;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;
-	/*if(sigaction(SIGINT, &sa, NULL)){
-		perror("sigaction");
-		exit(1);
-	}*/
 	signal(SIGINT, disp);
-	/*if(sigaction(SIGCHLD, &sa, NULL)){
-		perror("sigaction");
-		exit(-1);
-	}*/
 	struct sigaction kz;
 	kz.sa_handler = killZombie;
 	sigemptyset(&kz.sa_mask);
 	kz.sa_flags = 0;
 	signal(SIGCHLD, killZombie);
-	/*if(sigaction(SIGCHLD, &sa, NULL)){
-		perror("sigaction");
-		exit(-1);
-	}*/
 	Command::_currentCommand.clear();
 	Command::_currentCommand.prompt();
 
